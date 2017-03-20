@@ -1,3 +1,12 @@
+/*
+ * Author: HungWeiChen, hc2264
+ * Description: This jacobi 2D smoothing is based on jacobi 1D iteration code provided
+ *              by professor.
+ * Parallel parts: 1. Main smoothing iteration(red points & black points)
+ *                 2. calculate residual
+ *                 3. allocate / release memory
+*/
+
 #include <stdio.h>
 #include <math.h>
 #include "util.h"
@@ -38,8 +47,6 @@ int main(int argc, char * argv[]){
     max_iters = atoi(argv[2]);
   }
 
-  omp_set_num_threads(8);
-
   #pragma omp parallel
   {
     #ifdef _OPENMP
@@ -78,6 +85,7 @@ int main(int argc, char * argv[]){
     /* GS step for all the inner points */
 
     //red points
+    /*
     #pragma omp parallel for default(none) shared(N, u, hsq) private(i, j)
     for(i = 1; i <= N; i++){
       for(j = 1; j <= N; j++){
@@ -85,14 +93,30 @@ int main(int argc, char * argv[]){
           u[i][j] = 0.25 * (u[i - 1][j] + u[i][j - 1] + u[i + 1][j] + u[i][j + 1] + hsq);
         }
       }
+    }*/
+ 
+    #pragma omp parallel for default(none) shared(N, u, hsq) private(i, j)
+    for(i = 1; i <= N; i++){
+      for(j = (i % 2) + 1; j <= N; j += 2){
+        u[i][j] = 0.25 * (u[i - 1][j] + u[i][j - 1] + u[i + 1][j] + u[i][j + 1] + hsq);
+      } 
     }
+
     //black points
+    /*
     #pragma omp parallel for default(none) shared(N, u, hsq) private(i, j)
     for(i = 1; i <= N; i++){
       for(j = 1; j <= N; j++){
         if((i + j) % 2 == 1){
           u[i][j] = 0.25 * (u[i - 1][j] + u[i][j - 1] + u[i + 1][j] + u[i][j + 1] + hsq);
         }
+      }
+    }*/
+
+    #pragma omp parallel for default(none) shared(N, u, hsq) private(i, j)
+    for(i = 1; i <= N; i++){
+      for(j = ((i + 1) % 2) + 1; j <= N; j += 2){
+        u[i][j] = 0.25 * (u[i - 1][j] + u[i][j - 1] + u[i + 1][j] + u[i][j + 1] + hsq);
       }
     }
 

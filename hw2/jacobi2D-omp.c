@@ -1,3 +1,12 @@
+/*
+ * Author: HungWeiChen, hc2264
+ * Description: This jacobi 2D smoothing is based on jacobi 1D iteration code provided
+ *              by professor.
+ * Parallel parts: 1. Main smoothing iteration
+ *                 2. calculate residual
+ *                 3. allocate / release memory
+*/
+
 #include <stdio.h>
 #include <math.h>
 #include "util.h"
