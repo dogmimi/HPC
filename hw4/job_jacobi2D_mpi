@@ -1,0 +1,19 @@
+#!/bin/bash
+#----------------------------------------------------
+# Example SLURM job script to run hybrid applications
+# (MPI/OpenMP or MPI/pthreads) on TACC's Stampede
+# system.
+#----------------------------------------------------
+#SBATCH -J jacobi2Dmpi      # Job name
+#SBATCH -o jacobi2Dmpi.o%j  # Name of stdout output file(%j expands to jobId)
+#SBATCH -e jacobi2Dmpi.o%j  # Name of stderr output file(%j expands to jobId)
+#SBATCH -p development      # Submit to the 'normal' or 'development' queue
+#SBATCH -N 16               # Total number of nodes requested (16 cores/node)
+#SBATCH -n 64               # Total number of mpi tasks requested
+#SBATCH -t 01:00:00         # Run time (hh:mm:ss) - 1 hours
+#SBATCH --mail-user=hc2264@nyu.edu
+#SBATCH --mail-type=begin  # email me when the job starts
+#SBATCH --mail-type=end    # email me when the job finishes
+
+# Run the application
+ibrun ./jacobi-mpi2D 1600 1000
