@@ -5,8 +5,7 @@
 #include <mpi.h>
 
 /* compuate global residual, assuming ghost values are updated */
-double compute_residual(double **lu, int lN, double invhsq)
-{
+double compute_residual(double **lu, int lN, double invhsq){
   int i, j;
   double tmp, gres = 0.0, lres = 0.0;
 
@@ -101,26 +100,26 @@ int main(int argc, char * argv[]){
     if (col < half - 1) {
       /* If not the last process, send/recv bdry values to the right */
       for(i = 1; i <= lN; i++){
-        MPI_Send(&(lunew[i][lN]), 1, MPI_DOUBLE, mpirank+1, 124, MPI_COMM_WORLD);
-        MPI_Recv(&(lunew[i][lN+1]), 1, MPI_DOUBLE, mpirank+1, 123, MPI_COMM_WORLD, &status);
+        MPI_Send(&(lunew[i][lN]), 1, MPI_DOUBLE, mpirank+1, 125+lN+i, MPI_COMM_WORLD);
+        MPI_Recv(&(lunew[i][lN+1]), 1, MPI_DOUBLE, mpirank+1, 125+i, MPI_COMM_WORLD, &status);
       }
     }
     if (col > 0) {
       /* If not the first process, send/recv bdry values to the left */
       for(i = 1; i <= lN; i++){
-        MPI_Send(&(lunew[i][1]), 1, MPI_DOUBLE, mpirank-1, 123, MPI_COMM_WORLD);
-        MPI_Recv(&(lunew[i][0]), 1, MPI_DOUBLE, mpirank-1, 124, MPI_COMM_WORLD, &status);
+        MPI_Send(&(lunew[i][1]), 1, MPI_DOUBLE, mpirank-1, 125+i, MPI_COMM_WORLD);
+        MPI_Recv(&(lunew[i][0]), 1, MPI_DOUBLE, mpirank-1, 125+lN+i, MPI_COMM_WORLD, &status);
       }
     }
     if (row < half - 1) {
       /* If not the first process, send/recv bdry values to the bottom */
-      MPI_Send(&(lunew[lN][1]), lN, MPI_DOUBLE, mpirank+half, 125, MPI_COMM_WORLD);
-      MPI_Recv(&(lunew[lN+1][1]), lN, MPI_DOUBLE, mpirank+half, 126, MPI_COMM_WORLD, &status);
+      MPI_Send(&(lunew[lN][1]), lN, MPI_DOUBLE, mpirank+half, 123, MPI_COMM_WORLD);
+      MPI_Recv(&(lunew[lN+1][1]), lN, MPI_DOUBLE, mpirank+half, 124, MPI_COMM_WORLD, &status);
     }
     if (row > 0) {
       /* If not the first process, send/recv bdry values to the top */
-      MPI_Send(&(lunew[1][1]), lN, MPI_DOUBLE, mpirank-half, 126, MPI_COMM_WORLD);
-      MPI_Recv(&(lunew[0][1]), lN, MPI_DOUBLE, mpirank-half, 125, MPI_COMM_WORLD, &status);
+      MPI_Send(&(lunew[1][1]), lN, MPI_DOUBLE, mpirank-half, 124, MPI_COMM_WORLD);
+      MPI_Recv(&(lunew[0][1]), lN, MPI_DOUBLE, mpirank-half, 123, MPI_COMM_WORLD, &status);
     }
 
 
@@ -160,5 +159,7 @@ int main(int argc, char * argv[]){
   if(mpirank == 0){
     printf("Time elapsed is %f seconds.\n", elapsed);
   }
+  
+  MPI_Finalize();
   return 0;
 }

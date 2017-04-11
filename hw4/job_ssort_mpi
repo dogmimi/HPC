@@ -6,14 +6,14 @@
 #----------------------------------------------------
 #SBATCH -J ssort_mpi        # Job name
 #SBATCH -o ssort_mpi.o%j    # Name of stdout output file(%j expands to jobId)
-#SBATCH -e ssort_mpi.o%j  # Name of stderr output file(%j expands to jobId)
+#SBATCH -e ssort_mpi.o%j    # Name of stderr output file(%j expands to jobId)
 #SBATCH -p development      # Submit to the 'normal' or 'development' queue
-#SBATCH -N 16               # Total number of nodes requested (16 cores/node)
-#SBATCH -n 64               # Total number of mpi tasks requested
+#SBATCH -N 4                # Total number of nodes requested (16 cores/node)
+#SBATCH -n 16               # Total number of mpi tasks requested
 #SBATCH -t 01:00:00         # Run time (hh:mm:ss) - 1 hours
 #SBATCH --mail-user=hc2264@nyu.edu
-#SBATCH --mail-type=begin  # email me when the job starts
-#SBATCH --mail-type=end    # email me when the job finishes
+#SBATCH --mail-type=begin   # email me when the job starts
+#SBATCH --mail-type=end     # email me when the job finishes
 
 # Run the application
 ibrun ./ssort 1000

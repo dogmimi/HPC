@@ -5,8 +5,7 @@
 #include <mpi.h>
 
 /* compuate global residual, assuming ghost values are updated */
-double compute_residual(double **lu, int lN, double invhsq)
-{
+double compute_residual(double **lu, int lN, double invhsq){
   int i, j;
   double tmp, gres = 0.0, lres = 0.0;
 
@@ -105,26 +104,26 @@ int main(int argc, char * argv[]){
     if (col < half - 1) {
       /* If not the last process, send/recv bdry values to the right */
       for(i = 1; i <= lN; i++){
-        MPI_Isend(&(lunew[i][lN]), 1, MPI_DOUBLE, mpirank+1, 124, MPI_COMM_WORLD, &request_out_right[i-1]);
-        MPI_Irecv(&(lunew[i][lN+1]), 1, MPI_DOUBLE, mpirank+1, 123, MPI_COMM_WORLD, &request_in_right[i-1]);
+        MPI_Isend(&(lunew[i][lN]), 1, MPI_DOUBLE, mpirank+1, 125+lN+i, MPI_COMM_WORLD, &request_out_right[i-1]);
+        MPI_Irecv(&(lunew[i][lN+1]), 1, MPI_DOUBLE, mpirank+1, 125+i, MPI_COMM_WORLD, &request_in_right[i-1]);
       }
     }
     if (col > 0) {
       /* If not the first process, send/recv bdry values to the left */
       for(i = 1; i <= lN; i++){
-        MPI_Isend(&(lunew[i][1]), 1, MPI_DOUBLE, mpirank-1, 123, MPI_COMM_WORLD, &request_out_left[i-1]);
-        MPI_Irecv(&(lunew[i][0]), 1, MPI_DOUBLE, mpirank-1, 124, MPI_COMM_WORLD, &request_in_left[i-1]);
+        MPI_Isend(&(lunew[i][1]), 1, MPI_DOUBLE, mpirank-1, 125+i, MPI_COMM_WORLD, &request_out_left[i-1]);
+        MPI_Irecv(&(lunew[i][0]), 1, MPI_DOUBLE, mpirank-1, 125+lN+i, MPI_COMM_WORLD, &request_in_left[i-1]);
       }
     }
     if (row < half - 1) {
       /* If not the first process, send/recv bdry values to the bottom */
-      MPI_Isend(&(lunew[lN][1]), lN, MPI_DOUBLE, mpirank+half, 125, MPI_COMM_WORLD, &request_out_bottom);
-      MPI_Irecv(&(lunew[lN+1][1]), lN, MPI_DOUBLE, mpirank+half, 126, MPI_COMM_WORLD, &request_in_bottom);
+      MPI_Isend(&(lunew[lN][1]), lN, MPI_DOUBLE, mpirank+half, 123, MPI_COMM_WORLD, &request_out_bottom);
+      MPI_Irecv(&(lunew[lN+1][1]), lN, MPI_DOUBLE, mpirank+half, 124, MPI_COMM_WORLD, &request_in_bottom);
     }
     if (row > 0) {
       /* If not the first process, send/recv bdry values to the top */
-      MPI_Isend(&(lunew[1][1]), lN, MPI_DOUBLE, mpirank-half, 126, MPI_COMM_WORLD, &request_out_top);
-      MPI_Irecv(&(lunew[0][1]), lN, MPI_DOUBLE, mpirank-half, 125, MPI_COMM_WORLD, &request_in_top);
+      MPI_Isend(&(lunew[1][1]), lN, MPI_DOUBLE, mpirank-half, 124, MPI_COMM_WORLD, &request_out_top);
+      MPI_Irecv(&(lunew[0][1]), lN, MPI_DOUBLE, mpirank-half, 123, MPI_COMM_WORLD, &request_in_top);
     }
 
     /* Jacobi step for all the inner points */
@@ -185,5 +184,7 @@ int main(int argc, char * argv[]){
   if(mpirank == 0){
     printf("Time elapsed is %f seconds.\n", elapsed);
   }
+  
+  MPI_Finalize();
   return 0;
 }
