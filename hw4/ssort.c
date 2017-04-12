@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <mpi.h>
 #include <stdlib.h>
-
+#include "util.h"
 
 static int compare(const void *a, const void *b)
 {
@@ -24,6 +24,7 @@ int main( int argc, char *argv[]){
   int i, N, num_tasks, totalN, j, k, count;
   int *vec;
   int *splitter, *totalSplitter, *buckets, *gatheredBuckets, *localBuckets;
+  timestamp_type time1, time2;
 
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &num_tasks);
@@ -40,6 +41,7 @@ int main( int argc, char *argv[]){
 
   /* Number of random numbers per processor (this should be increased
    * for actual tests or could be passed in through the command line */
+  get_timestamp(&time1);
   N = atoi(argv[1]);
   MPI_Bcast(&N, 1, MPI_INT, 0, MPI_COMM_WORLD);
    
@@ -125,20 +127,33 @@ int main( int argc, char *argv[]){
 
   /* do a local sort */
   //arrange data first then do sorting
-  localBuckets = (int*)malloc(sizeof(int) * 2 * totalN / num_tasks);
+  //calculate localBuckets' total count
+  int localBucketsCount = 0;
+  for(j = 0; j < num_tasks; j++){
+    localBucketsCount += gatheredBuckets[(N + 1) * j] + 1;
+  }
+  localBuckets = (int*)malloc(sizeof(int) * localBucketsCount);
   count = 0;
 
   for(j = 0; j < num_tasks; j++){
     k = 1;
-    for(i = 0; i < gatheredBuckets[(totalN / num_tasks + 1) * j]; i++){ 
-      localBuckets[count] = gatheredBuckets[(totalN / num_tasks + 1) * j + k];
+    for(i = 0; i < gatheredBuckets[(N + 1) * j]; i++){ 
+      localBuckets[count] = gatheredBuckets[(N + 1) * j + k];
       count++;
       k++;
     }
   }
   qsort(localBuckets, count, sizeof(int), compare);
 
-  printf("task %d finished sorting %d numbers\n", rank, count); 
+  printf("task %d finished sorting %d numbers\n", rank, count);
+  /* timing */
+  MPI_Barrier(MPI_COMM_WORLD);
+  get_timestamp(&time2);
+  double elapsed = timestamp_diff_in_seconds(time1, time2);
+  if(rank == 0){
+    printf("total %d numbers.\n", totalN);
+    printf("Time elapsed is %f seconds.\n", elapsed);
+  }
 
   /* every processor writes its result to a file */
   {
