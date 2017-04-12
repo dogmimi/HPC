@@ -50,8 +50,10 @@ int main(int argc, char * argv[]){
   /* compute number of unknowns handled by each process */
   lN = N / half;
   MPI_Status status;
-  MPI_Request request_out_left[lN], request_in_left[lN];
-  MPI_Request request_out_right[lN], request_in_right[lN];
+  //MPI_Request request_out_left[lN], request_in_left[lN];
+  //MPI_Request request_out_right[lN], request_in_right[lN];
+  MPI_Request request_out_left, request_in_left;
+  MPI_Request request_out_right, request_in_right;
   MPI_Request request_out_top, request_in_top;
   MPI_Request request_out_bottom, request_in_bottom;
   if ((N % p != 0) && mpirank == 0 ) {
@@ -72,6 +74,10 @@ int main(int argc, char * argv[]){
     lu[i] = (double *) calloc(sizeof(double), lN + 2);
     lunew[i] = (double *) calloc(sizeof(double), lN + 2);
   }
+  double *ghost_left_r = (double*)calloc(sizeof(double), lN);
+  double *ghost_right_r = (double*)calloc(sizeof(double), lN);
+  double *ghost_left_s = (double*)calloc(sizeof(double), lN);
+  double *ghost_right_s = (double*)calloc(sizeof(double), lN);
 
   double h = 1.0 / (N + 1);
   double hsq = h * h;
@@ -103,17 +109,34 @@ int main(int argc, char * argv[]){
 
     if (col < half - 1) {
       /* If not the last process, send/recv bdry values to the right */
-      for(i = 1; i <= lN; i++){
+      /*for(i = 1; i <= lN; i++){
         MPI_Isend(&(lunew[i][lN]), 1, MPI_DOUBLE, mpirank+1, 125+lN+i, MPI_COMM_WORLD, &request_out_right[i-1]);
         MPI_Irecv(&(lunew[i][lN+1]), 1, MPI_DOUBLE, mpirank+1, 125+i, MPI_COMM_WORLD, &request_in_right[i-1]);
+      }*/
+      for(i = 1; i <= lN; i++){
+        ghost_right_s[i - 1] = lunew[i][lN];
       }
+      MPI_Isend(ghost_right_s, lN, MPI_DOUBLE, mpirank+1, 125, MPI_COMM_WORLD, &request_out_right);
+      MPI_Irecv(ghost_right_r, lN, MPI_DOUBLE, mpirank+1, 126, MPI_COMM_WORLD, &request_in_right);
+      /*for(i = 1; i <= lN; i++){
+        lunew[i][lN+1] = ghost_right_r[i - 1];
+      }*/
+
     }
     if (col > 0) {
       /* If not the first process, send/recv bdry values to the left */
-      for(i = 1; i <= lN; i++){
+      /*for(i = 1; i <= lN; i++){
         MPI_Isend(&(lunew[i][1]), 1, MPI_DOUBLE, mpirank-1, 125+i, MPI_COMM_WORLD, &request_out_left[i-1]);
         MPI_Irecv(&(lunew[i][0]), 1, MPI_DOUBLE, mpirank-1, 125+lN+i, MPI_COMM_WORLD, &request_in_left[i-1]);
+      }*/
+      for(i = 1; i <= lN; i++){
+        ghost_left_s[i - 1] = lunew[i][1];
       }
+      MPI_Isend(ghost_left_s, lN, MPI_DOUBLE, mpirank-1, 126, MPI_COMM_WORLD, &request_out_left);
+      MPI_Irecv(ghost_left_r, lN, MPI_DOUBLE, mpirank-1, 125, MPI_COMM_WORLD, &request_in_left);
+      /*for(i = 1; i <= lN; i++){
+        lunew[i][0] = ghost_left_r[i - 1];
+      }*/
     }
     if (row < half - 1) {
       /* If not the first process, send/recv bdry values to the bottom */
@@ -135,15 +158,25 @@ int main(int argc, char * argv[]){
  
     /* check if Isend/Irecv are done */
     if(col < half - 1){
-      for(i = 1; i <= lN; i++){
+      /*for(i = 1; i <= lN; i++){
         MPI_Wait(&request_out_right[i - 1], &status);
         MPI_Wait(&request_in_right[i - 1], &status);
+      }*/
+      MPI_Wait(&request_out_right, &status);
+      MPI_Wait(&request_in_right, &status);
+      for(i = 1; i <= lN; i++){
+        lunew[i][lN+1] = ghost_right_r[i - 1];
       }
     }
     if(col > 0){
-      for(i = 1; i <= lN; i++){
+      /*for(i = 1; i <= lN; i++){
         MPI_Wait(&request_out_left[i - 1], &status);
         MPI_Wait(&request_in_left[i - 1], &status);
+      }*/
+      MPI_Wait(&request_out_left, &status);
+      MPI_Wait(&request_in_left, &status);
+      for(i = 1; i <= lN; i++){
+        lunew[i][0] = ghost_left_r[i - 1];
       }
     }
     if(row < half - 1){
@@ -176,6 +209,10 @@ int main(int argc, char * argv[]){
     
   free(lu);
   free(lunew);
+  free(ghost_left_s);
+  free(ghost_right_s);
+  free(ghost_left_r);
+  free(ghost_right_r);
 
   /* timing */
   MPI_Barrier(MPI_COMM_WORLD);

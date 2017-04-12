@@ -68,6 +68,10 @@ int main(int argc, char * argv[]){
     lu[i] = (double *) calloc(sizeof(double), lN + 2);
     lunew[i] = (double *) calloc(sizeof(double), lN + 2);
   }
+  double *ghost_left_r = (double*)calloc(sizeof(double), lN);
+  double *ghost_right_r = (double*)calloc(sizeof(double), lN);
+  double *ghost_left_s = (double*)calloc(sizeof(double), lN);
+  double *ghost_right_s = (double*)calloc(sizeof(double), lN);
 
   double h = 1.0 / (N + 1);
   double hsq = h * h;
@@ -99,16 +103,32 @@ int main(int argc, char * argv[]){
 
     if (col < half - 1) {
       /* If not the last process, send/recv bdry values to the right */
-      for(i = 1; i <= lN; i++){
+      /*for(i = 1; i <= lN; i++){
         MPI_Send(&(lunew[i][lN]), 1, MPI_DOUBLE, mpirank+1, 125+lN+i, MPI_COMM_WORLD);
         MPI_Recv(&(lunew[i][lN+1]), 1, MPI_DOUBLE, mpirank+1, 125+i, MPI_COMM_WORLD, &status);
+      }*/
+      for(i = 1; i <= lN; i++){
+        ghost_right_s[i - 1] = lunew[i][lN];
+      }
+      MPI_Send(ghost_right_s, lN, MPI_DOUBLE, mpirank+1, 125, MPI_COMM_WORLD);
+      MPI_Recv(ghost_right_r, lN, MPI_DOUBLE, mpirank+1, 126, MPI_COMM_WORLD, &status);
+      for(i = 1; i <= lN; i++){
+        lunew[i][lN+1] = ghost_right_r[i - 1];
       }
     }
     if (col > 0) {
       /* If not the first process, send/recv bdry values to the left */
-      for(i = 1; i <= lN; i++){
+      /*for(i = 1; i <= lN; i++){
         MPI_Send(&(lunew[i][1]), 1, MPI_DOUBLE, mpirank-1, 125+i, MPI_COMM_WORLD);
         MPI_Recv(&(lunew[i][0]), 1, MPI_DOUBLE, mpirank-1, 125+lN+i, MPI_COMM_WORLD, &status);
+      }*/
+      for(i = 1; i <= lN; i++){
+        ghost_left_s[i - 1] = lunew[i][1];
+      }
+      MPI_Send(ghost_left_s, lN, MPI_DOUBLE, mpirank-1, 126, MPI_COMM_WORLD);
+      MPI_Recv(ghost_left_r, lN, MPI_DOUBLE, mpirank-1, 125, MPI_COMM_WORLD, &status);
+      for(i = 1; i <= lN; i++){
+        lunew[i][0] = ghost_left_r[i - 1];
       }
     }
     if (row < half - 1) {
@@ -151,6 +171,10 @@ int main(int argc, char * argv[]){
     
   free(lu);
   free(lunew);
+  free(ghost_left_s);
+  free(ghost_right_s);
+  free(ghost_left_r);
+  free(ghost_right_r);
 
   /* timing */
   MPI_Barrier(MPI_COMM_WORLD);
